@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Contract Fee & PnL Calculator — V5</title>
+  <title>合约手续费与盈亏计算器 — V5</title>
   <style>
     :root { --bg:#0b0c10; --card:#15171c; --muted:#8a8f98; --fg:#e8edf2; --accent:#4da3ff; --ok:#22c55e; --bad:#ef4444; --border:#242833; }
     html,body{height:100%;}
@@ -41,99 +41,206 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>Contract Fee & PnL Calculator V5</h1>
-      <div class="muted">Modern layout; supports VIP fee rates, Maker/Taker fees, unrealized PnL (remaining/total), <b>full or partial close</b>.</div>
+      <!-- Language Switch -->
+      <div class="row" style="margin-bottom:12px;">
+        <div class="switch" role="tablist" aria-label="Language">
+          <button id="lang-zh" class="active" aria-pressed="true" data-lang="zh">中文</button>
+          <button id="lang-en" data-lang="en" aria-pressed="false">English</button>
+        </div>
+      </div>
+
+      <h1>合约手续费与盈亏计算器 V5</h1>
+      <div class="muted">V2 样式与布局；支持 VIP 费率、开/平 Maker/Taker、未实现盈亏口径（剩余量/总量）、<b>一键全平/按百分比分仓</b>。</div>
       <div class="hr"></div>
 
       <div class="grid">
         <div class="col-12">
-          <label>Position / Unrealized PnL Basis / Quick Close</label>
+          <label id="label-side-unreal">方向 / 未实现口径 / 平仓便捷操作</label>
           <div class="row">
-            <div class="switch" role="tablist" aria-label="Position Side">
-              <button id="side-long" class="active" data-side="long" aria-pressed="true" title="Select Long Position">Long</button>
-              <button id="side-short" data-side="short" aria-pressed="false" title="Select Short Position">Short</button>
+            <div class="switch" role="tablist" aria-label="方向">
+              <button id="side-long" class="active" data-side="long" aria-pressed="true">做多 Long</button>
+              <button id="side-short" data-side="short" aria-pressed="false">做空 Short</button>
             </div>
-            <div class="switch" role="tablist" aria-label="Unrealized Basis">
-              <button id="unreal-remaining" class="active" data-unreal="remaining" aria-pressed="true" title="Calculate based on remaining quantity">Remaining</button>
-              <button id="unreal-total" data-unreal="total" aria-pressed="false" title="Calculate based on total quantity">Total</button>
+            <div class="switch" role="tablist" aria-label="未实现口径">
+              <button id="unreal-remaining" class="active" data-unreal="remaining" aria-pressed="true" title="按剩余持仓量计算">未实现=剩余量</button>
+              <button id="unreal-total" data-unreal="total" aria-pressed="false" title="按总开仓量计算">未实现=总量</button>
             </div>
-            <button class="btn" id="btnFullClose" title="Set close quantity equal to open quantity">Full Close</button>
+            <button class="btn" id="btnFullClose" title="将平仓量设为等于开仓量">全部平仓</button>
             <div class="row" style="gap:8px;align-items:center">
-              <label for="partialPct" style="margin:0;color:var(--muted);font-size:13px">Partial Close (%)</label>
-              <input id="partialPct" type="number" inputmode="decimal" step="0.01" min="0" max="100" placeholder="e.g., 25%" style="width:120px" />
-              <button class="btn" id="btnApplyPct">Apply</button>
+              <label for="partialPct" id="label-partialPct" style="margin:0;color:var(--muted);font-size:13px">部分平仓 %</label>
+              <input id="partialPct" type="number" inputmode="decimal" step="0.01" min="0" max="100" placeholder="例如 25" style="width:120px" />
+              <button class="btn" id="btnApplyPct">应用</button>
             </div>
           </div>
         </div>
 
         <div class="col-3">
-          <label for="openPrice">Open Price</label>
+          <label for="openPrice" id="label-openPrice">开仓价格</label>
           <input id="openPrice" type="number" inputmode="decimal" step="0.01" value="7000" />
         </div>
         <div class="col-3">
-          <label for="openQty">Open Quantity</label>
+          <label for="openQty" id="label-openQty">开仓数量（币）</label>
           <input id="openQty" type="number" inputmode="decimal" step="0.0001" value="20" />
         </div>
         <div class="col-3">
-          <label for="closePrice">Close Price</label>
+          <label for="closePrice" id="label-closePrice">平仓价格</label>
           <input id="closePrice" type="number" inputmode="decimal" step="0.01" value="8000" />
         </div>
         <div class="col-3">
-          <label for="closeQty">Close Quantity</label>
+          <label for="closeQty" id="label-closeQty">平仓数量（币）</label>
           <input id="closeQty" type="number" inputmode="decimal" step="0.0001" value="10" />
         </div>
 
         <div class="col-3">
-          <label for="currentPrice">Current Price</label>
+          <label for="currentPrice" id="label-currentPrice">当前价格</label>
           <input id="currentPrice" type="number" inputmode="decimal" step="0.01" value="8000" />
         </div>
         <div class="col-3">
-          <label for="leverage">Leverage (×)</label>
+          <label for="leverage" id="label-leverage">杠杆倍数（×）</label>
           <input id="leverage" type="number" inputmode="decimal" step="0.1" min="1" value="20" />
         </div>
         <div class="col-3">
-          <label for="mmr">Maintenance Margin Rate (%)</label>
+          <label for="mmr" id="label-mmr">维持保证金率（%，可选）</label>
           <input id="mmr" type="number" inputmode="decimal" step="0.01" value="0.5" />
         </div>
         <div class="col-3">
-          <label for="vipLevel">VIP Level (Auto Fees)</label>
+          <label for="vipLevel" id="label-vipLevel">VIP 等级（自动费率）</label>
           <select id="vipLevel">
-            <option value="0" selected>VIP0 — Taker 0.08% / Maker 0.02%</option>
+            <option value="0" selected>VIP0 — Taker 0.080% / Maker 0.020%</option>
             <option value="1">VIP1 — Taker 0.072% / Maker 0.018%</option>
-            <option value="2">VIP2 — Taker 0.06% / Maker 0.015%</option>
+            <option value="2">VIP2 — Taker 0.060% / Maker 0.015%</option>
             <option value="3">VIP3 — Taker 0.052% / Maker 0.013%</option>
             <option value="4">VIP4 — Taker 0.048% / Maker 0.012%</option>
             <option value="5">VIP5 — Taker 0.044% / Maker 0.011%</option>
-            <option value="6">VIP6 — Taker 0.04% / Maker 0.01%</option>
+            <option value="6">VIP6 — Taker 0.040% / Maker 0.010%</option>
             <option value="7">VIP7 — Taker 0.032% / Maker 0.008%</option>
-            <option value="8">VIP8 — Taker 0.024% / Maker 0%</option>
+            <option value="8">VIP8 — Taker 0.024% / Maker 0.000%</option>
           </select>
         </div>
 
         <div class="col-3">
-          <label>Open Fee Type</label>
-          <div class="switch" role="tablist" aria-label="Open Fee Type">
-            <button id="open-fee-maker" data-feeopen="maker" title="Maker Fee">Maker</button>
-            <button id="open-fee-taker" class="active" data-feeopen="taker" aria-pressed="true" title="Taker Fee">Taker</button>
+          <label id="label-openFee">开仓手续费类型</label>
+          <div class="switch" role="tablist" aria-label="开仓手续费类型">
+            <button id="open-fee-maker" data-feeopen="maker">Maker</button>
+            <button id="open-fee-taker" class="active" data-feeopen="taker" aria-pressed="true">Taker</button>
           </div>
         </div>
         <div class="col-3">
-          <label>Close Fee Type</label>
-          <div class="switch" role="tablist" aria-label="Close Fee Type">
-            <button id="close-fee-maker" data-feeclose="maker" title="Maker Fee">Maker</button>
-            <button id="close-fee-taker" class="active" data-feeclose="taker" aria-pressed="true" title="Taker Fee">Taker</button>
+          <label id="label-closeFee">平仓手续费类型</label>
+          <div class="switch" role="tablist" aria-label="平仓手续费类型">
+            <button id="close-fee-maker" data-feeclose="maker">Maker</button>
+            <button id="close-fee-taker" class="active" data-feeclose="taker" aria-pressed="true">Taker</button>
           </div>
         </div>
 
         <div class="col-12 row right">
-          <button class="btn" id="exampleBtn">Fill Example (7000/8000)</button>
-          <button class="btn" id="resetBtn" title="Clear all fields">Reset</button>
-          <button class="btn primary" id="calcBtn">Calculate</button>
+          <button class="btn" id="exampleBtn">一键填入示例（7000/8000）</button>
+          <button class="btn" id="resetBtn" title="清空表单">清空</button>
+          <button class="btn primary" id="calcBtn">计算</button>
         </div>
       </div>
 
       <div class="hr"></div>
 
       <div class="grid" id="results" aria-live="polite">
-        <div class="col-4"><div class="stat"><div class="label">Open Fee</div><div class="value" id="feeOpen">-</div></div></div>
-       
+        <div class="col-4"><div class="stat"><div class="label">开仓手续费</div><div class="value" id="feeOpen">-</div></div></div>
+        <div class="col-4"><div class="stat"><div class="label">平仓手续费</div><div class="value" id="feeClose">-</div></div></div>
+        <div class="col-4"><div class="stat"><div class="label">总手续费</div><div class="value" id="feeTotal">-</div></div></div>
+
+        <div class="col-4"><div class="stat"><div class="label">名义价值（Notional）</div><div class="value" id="notional">-</div></div></div>
+        <div class="col-4"><div class="stat"><div class="label">保证金占用（初始保证金）</div><div class="value" id="initMargin">-</div></div></div>
+        <div class="col-4"><div class="stat"><div class="label">强平价（简化估算）</div><div class="value" id="liqPrice">-</div></div></div>
+
+        <div class="col-6"><div class="stat"><div class="label">已实现盈亏（不含手续费）</div><div class="value" id="pnlRaw">-</div></div></div>
+        <div class="col-6"><div class="stat"><div class="label">已实现盈亏（含手续费）</div><div class="value" id="pnlNet">-</div></div></div>
+        <div class="col-12"><div class="stat"><div class="label">未实现盈亏（不含手续费）</div><div class="value" id="pnlUnreal">-</div></div></div>
+      </div>
+
+      <div class="hr"></div>
+      <div class="muted">
+        公式：<code>开仓手续费 = 开仓价 × 开仓量 × 费率</code>；<code>平仓手续费 = 平仓价 × 平仓量 × 费率</code>；<code>名义价值 = 开仓价 × 开仓量</code>；
+        <code>初始保证金 ≈ 名义 ÷ 杠杆</code>；<code>已实现盈亏（多）= 实现量 × (平 − 开)</code>；
+        <code>已实现盈亏（空）= 实现量 × (开 − 平)</code>；<code>未实现盈亏（多）= 口径量 × (现 − 开)</code>；
+        <code>未实现盈亏（空）= 口径量 × (开 − 现)</code>；<code>强平价（简化）多 = 开 × (1 + MMR − 1/杠杆)</code>；
+        <code>空 = 开 × (1 + 1/杠杆 − MMR)</code>（忽略手续费/阶梯 MMR/资金费）。
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const state = { side:'long', unreal:'remaining', feeOpen:'taker', feeClose:'taker', unit:'USDT' };
+
+    const vipRates = {
+      0:{taker:0.0008, maker:0.0002},1:{taker:0.00072, maker:0.00018},2:{taker:0.00060, maker:0.00015},
+      3:{taker:0.00052, maker:0.00013},4:{taker:0.00048, maker:0.00012},5:{taker:0.00044, maker:0.00011},
+      6:{taker:0.00040, maker:0.00010},7:{taker:0.00032, maker:0.00008},8:{taker:0.00024, maker:0.00000}
+    };
+
+    const texts = {
+      zh: { title:'合约手续费与盈亏计算器 V5', description:'V2 样式与布局；支持 VIP 费率、开/平 Maker/Taker、未实现盈亏口径（剩余量/总量）、一键全平/按百分比分仓。',
+        labels:{side:'方向',unreal:'未实现口径',quickClose:'平仓便捷操作',long:'做多 Long',short:'做空 Short',
+          unrealRemaining:'未实现=剩余量',unrealTotal:'未实现=总量',fullClose:'全部平仓',partialClose:'部分平仓 %',
+          openPrice:'开仓价格',openQty:'开仓数量（币）',closePrice:'平仓价格',closeQty:'平仓数量（币]',
+          currentPrice:'当前价格',leverage:'杠杆倍数（×）',mmr:'维持保证金率（%，可选）',vipLevel:'VIP 等级（自动费率）',
+          openFee:'开仓手续费类型',closeFee:'平仓手续费类型',example:'一键填入示例（7000/8000）',reset:'清空',calc:'计算'}},
+      en: { title:'Contract Fee & PnL Calculator V5', description:'V2 style/layout; supports VIP rates, Maker/Taker fees, unrealized PnL options, full-close / partial-close.',
+        labels:{side:'Side',unreal:'Unrealized Qty',quickClose:'Quick Close',long:'Long',short:'Short',
+          unrealRemaining:'Unrealized = Remaining',unrealTotal:'Unrealized = Total',fullClose:'Full Close',partialClose:'Partial Close %',
+          openPrice:'Open Price',openQty:'Open Qty (Coin)',closePrice:'Close Price',closeQty:'Close Qty (Coin)',
+          currentPrice:'Current Price',leverage:'Leverage (×)',mmr:'MMR (%) (Optional)',vipLevel:'VIP Level (Auto Rates)',
+          openFee:'Open Fee Type',closeFee:'Close Fee Type',example:'Fill Example (7000/8000)',reset:'Reset',calc:'Calculate'}}
+    };
+    let currentLang='zh';
+
+    function setSwitch(activeBtn){
+      [...activeBtn.parentElement.children].forEach(btn=>{
+        btn.classList.toggle('active', btn===activeBtn);
+        btn.setAttribute('aria-pressed', btn===activeBtn ? 'true':'false');
+      });
+    }
+
+    function setLanguage(lang){
+      currentLang = lang;
+      const t = texts[lang];
+      document.querySelector('h1').textContent = t.title;
+      document.querySelector('.muted').firstChild.textContent = t.description;
+
+      $('side-long').textContent = t.labels.long;
+      $('side-short').textContent = t.labels.short;
+      $('unreal-remaining').textContent = t.labels.unrealRemaining;
+      $('unreal-total').textContent = t.labels.unrealTotal;
+      $('btnFullClose').textContent = t.labels.fullClose;
+      $('label-partialPct').textContent = t.labels.partialClose;
+      $('label-openPrice').textContent = t.labels.openPrice;
+      $('label-openQty').textContent = t.labels.openQty;
+      $('label-closePrice').textContent = t.labels.closePrice;
+      $('label-closeQty').textContent = t.labels.closeQty;
+      $('label-currentPrice').textContent = t.labels.currentPrice;
+      $('label-leverage').textContent = t.labels.leverage;
+      $('label-mmr').textContent = t.labels.mmr;
+      $('label-vipLevel').textContent = t.labels.vipLevel;
+      $('label-openFee').textContent = t.labels.openFee;
+      $('label-closeFee').textContent = t.labels.closeFee;
+      $('exampleBtn').textContent = t.labels.example;
+      $('resetBtn').textContent = t.labels.reset;
+      $('calcBtn').textContent = t.labels.calc;
+
+      ['lang-zh','lang-en'].forEach(id=>{
+        const btn = $(id);
+        const active = btn.dataset.lang===lang;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', active?'true':'false');
+      });
+    }
+
+    $('lang-zh').onclick = ()=>setLanguage('zh');
+    $('lang-en').onclick = ()=>setLanguage('en');
+
+    // Initialize
+    setLanguage(currentLang);
+
+    // You can add your calc logic here...
+  </script>
+</body>
+</html>
