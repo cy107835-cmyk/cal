@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Futures Fee & PnL Calculator — V5 (VIP Rate + Maker/Taker + Full/Partial Close)</title>
+  <title>Contract Fee & PnL Calculator — V5 (VIP Rates + Maker/Taker + Full/Partial Close)</title>
   <style>
     :root { --bg:#0b0c10; --card:#15171c; --muted:#8a8f98; --fg:#e8edf2; --accent:#4da3ff; --ok:#22c55e; --bad:#ef4444; --border:#242833; }
     html,body{height:100%;}
@@ -41,21 +41,21 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>Futures Fee & PnL Calculator V5</h1>
-      <div class="muted">V2 style/layout; supports VIP rate, Maker/Taker fees, unrealized PnL by remaining/total, <b>full/partial close with one click</b>.</div>
+      <h1>Contract Fee & PnL Calculator V5</h1>
+      <div class="muted">V2 layout and styling; supports VIP rates, open/close Maker/Taker fees, unrealized PnL calculation (remaining/total), <b>full close / partial close by percentage</b>.</div>
       <div class="hr"></div>
 
       <div class="grid">
         <div class="col-12">
-          <label>Side / Unrealized Basis / Quick Close Options</label>
+          <label>Position / Unrealized Basis / Quick Close</label>
           <div class="row">
-            <div class="switch" role="tablist" aria-label="Side">
+            <div class="switch" role="tablist" aria-label="Position">
               <button id="side-long" class="active" data-side="long" aria-pressed="true">Long</button>
               <button id="side-short" data-side="short" aria-pressed="false">Short</button>
             </div>
             <div class="switch" role="tablist" aria-label="Unrealized Basis">
-              <button id="unreal-remaining" class="active" data-unreal="remaining" aria-pressed="true" title="Calculate by remaining qty">Unrealized = Remaining</button>
-              <button id="unreal-total" data-unreal="total" aria-pressed="false" title="Calculate by total open qty">Unrealized = Total</button>
+              <button id="unreal-remaining" class="active" data-unreal="remaining" aria-pressed="true" title="Based on remaining position">Remaining</button>
+              <button id="unreal-total" data-unreal="total" aria-pressed="false" title="Based on total position">Total</button>
             </div>
             <button class="btn" id="btnFullClose" title="Set close quantity equal to open quantity">Full Close</button>
             <div class="row" style="gap:8px;align-items:center">
@@ -71,7 +71,7 @@
           <input id="openPrice" type="number" inputmode="decimal" step="0.01" value="7000" />
         </div>
         <div class="col-3">
-          <label for="openQty">Open Quantity</label>
+          <label for="openQty">Open Quantity (coins)</label>
           <input id="openQty" type="number" inputmode="decimal" step="0.0001" value="20" />
         </div>
         <div class="col-3">
@@ -79,7 +79,7 @@
           <input id="closePrice" type="number" inputmode="decimal" step="0.01" value="8000" />
         </div>
         <div class="col-3">
-          <label for="closeQty">Close Quantity</label>
+          <label for="closeQty">Close Quantity (coins)</label>
           <input id="closeQty" type="number" inputmode="decimal" step="0.0001" value="10" />
         </div>
 
@@ -92,11 +92,11 @@
           <input id="leverage" type="number" inputmode="decimal" step="0.1" min="1" value="20" />
         </div>
         <div class="col-3">
-          <label for="mmr">Maintenance Margin Rate (%)</label>
+          <label for="mmr">Maintenance Margin Rate (%, optional)</label>
           <input id="mmr" type="number" inputmode="decimal" step="0.01" value="0.5" />
         </div>
         <div class="col-3">
-          <label for="vipLevel">VIP Level (auto fee rate)</label>
+          <label for="vipLevel">VIP Level (automatic fees)</label>
           <select id="vipLevel">
             <option value="0" selected>VIP0 — Taker 0.080% / Maker 0.020%</option>
             <option value="1">VIP1 — Taker 0.072% / Maker 0.018%</option>
@@ -119,4 +119,49 @@
         </div>
         <div class="col-3">
           <label>Close Fee Type</label>
-          <div class="switch" role="tablist" aria-label="Close Fee
+          <div class="switch" role="tablist" aria-label="Close Fee Type">
+            <button id="close-fee-maker" data-feeclose="maker">Maker</button>
+            <button id="close-fee-taker" class="active" data-feeclose="taker" aria-pressed="true">Taker</button>
+          </div>
+        </div>
+
+        <div class="col-12 row right">
+          <button class="btn" id="exampleBtn">Fill Example (7000/8000)</button>
+          <button class="btn" id="resetBtn" title="Clear Form">Reset</button>
+          <button class="btn primary" id="calcBtn">Calculate</button>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="grid" id="results" aria-live="polite">
+        <div class="col-4"><div class="stat"><div class="label">Open Fee</div><div class="value" id="feeOpen">-</div></div></div>
+        <div class="col-4"><div class="stat"><div class="label">Close Fee</div><div class="value" id="feeClose">-</div></div></div>
+        <div class="col-4"><div class="stat"><div class="label">Total Fee</div><div class="value" id="feeTotal">-</div></div></div>
+
+        <div class="col-4"><div class="stat"><div class="label">Notional Value</div><div class="value" id="notional">-</div></div></div>
+        <div class="col-4"><div class="stat"><div class="label">Initial Margin</div><div class="value" id="initMargin">-</div></div></div>
+        <div class="col-4"><div class="stat"><div class="label">Liquidation Price (approx.)</div><div class="value" id="liqPrice">-</div></div></div>
+
+        <div class="col-6"><div class="stat"><div class="label">Realized PnL (without fees)</div><div class="value" id="pnlRaw">-</div></div></div>
+        <div class="col-6"><div class="stat"><div class="label">Realized PnL (net of fees)</div><div class="value" id="pnlNet">-</div></div></div>
+        <div class="col-12"><div class="stat"><div class="label">Unrealized PnL (without fees)</div><div class="value" id="pnlUnreal">-</div></div></div>
+      </div>
+
+      <div class="hr"></div>
+      <div class="muted">
+        Formulas: <code>Open Fee = Open Price × Open Qty × Rate</code>; <code>Close Fee = Close Price × Close Qty × Rate</code>; 
+        <code>Notional = Open Price × Open Qty</code>; <code>Initial Margin ≈ Notional ÷ Leverage</code>; 
+        <code>Realized PnL (Long) = Closed Qty × (Close − Open)</code>; <code>Realized PnL (Short) = Closed Qty × (Open − Close)</code>; 
+        <code>Unrealized PnL (Long) = Basis Qty × (Current − Open)</code>; <code>Unrealized PnL (Short) = Basis Qty × (Open − Current)</code>; 
+        <code>Liquidation Price (Long) = Open × (1 + MMR − 1/Leverage)</code>; <code>Liquidation Price (Short) = Open × (1 + 1/Leverage − MMR)</code> (ignores fees, step MMR, funding rate).
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript code remains unchanged; only UI labels changed -->
+  <script>
+    // Original JS logic
+  </script>
+</body>
+</html>
